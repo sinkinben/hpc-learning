@@ -1,6 +1,5 @@
 #include "matrix.h"
 #include <algorithm>
-using std::min;
 
 static constexpr int TILE = 8;
 
