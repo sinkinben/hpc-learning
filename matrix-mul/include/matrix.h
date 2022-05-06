@@ -3,11 +3,12 @@
 #include <cassert>
 #include <utility>
 #include <iostream>
+#include <cstdlib>
 struct Matrix
 {
     int rows, cols;
     float *elements;
-    Matrix(int m, int n) : rows(m), cols(n), elements(new float[m * n]) {}
+    Matrix(int m, int n) : rows(m), cols(n), elements((float *)aligned_alloc(32, sizeof(float) * m * n)) {}
 
     void Destroy() { delete[] elements; }
 
