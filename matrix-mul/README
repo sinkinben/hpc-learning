@@ -1,0 +1,10 @@
+Matrix Multiplication
+
+In this project, I will introduce the optimization methods of matrix multiplication
+step by step. It will include this subjects:
+* CPU Cache optimization
+* Parallelized Instructions (i.e. SPMD and SIMD-AVX)
+* CUDA Programming
+  * Naive matrix multiplication on CUDA
+  * Shared memory within each block of CUDA
+  * Memory mapping between device and host
