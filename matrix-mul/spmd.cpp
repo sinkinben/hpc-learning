@@ -1,3 +1,4 @@
+/* GEMM based on ISPC-SPMD */
 #include <iostream>
 #include <cassert>
 #include <cmath>
@@ -11,7 +12,7 @@ static inline void Fill(float arr[], int size)
         arr[i] = rand() / RAND_MAX;
 }
 
-inline void check(int m, int n, int k, float *A, float *B, float *C)
+inline void Check(int m, int n, int k, float *A, float *B, float *C)
 {
     for (int i = 0; i < m; ++i)
     {
@@ -35,8 +36,9 @@ static inline void RunTest(int m, int n, int k, const char *name)
 
     Timer timer;
     uint64_t cycleStart = 0;
-    double totalTime = 0, totalCycles = 0;
-    for (int i = 0; i < N; ++i)
+    double totalTime = 0;
+    uint64_t totalCycles = 0;
+    for (int i = 0; i < TEST; ++i)
     {
         timer.reset();
         cycleStart = Benchmark::GetCPUCycle();
@@ -44,8 +46,10 @@ static inline void RunTest(int m, int n, int k, const char *name)
         totalCycles += Benchmark::GetCPUCycle() - cycleStart;
         totalTime += timer.elapsed_nano();
     }
-    PrintResult(name, (totalTime / N), (totalCycles / N));
-    check(m, n, k, A, B, C);
+    PrintResult(name, ((totalTime / 1e6) / TEST), (double)totalCycles / TEST);
+#ifdef OPEN_CHECKING
+    Check(m, n, k, A, B, C);
+#endif
     delete[] A;
     delete[] B;
     delete[] C;

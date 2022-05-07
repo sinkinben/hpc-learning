@@ -10,7 +10,7 @@ struct Matrix
     float *elements;
     Matrix(int m, int n) : rows(m), cols(n), elements((float *)aligned_alloc(32, sizeof(float) * m * n)) {}
 
-    void Destroy() { delete[] elements; }
+    void Destroy() { free(elements); }
 
     size_t Size() const { return (size_t)rows * cols; }
 

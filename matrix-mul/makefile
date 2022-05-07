@@ -12,12 +12,15 @@ cpu_opt_loop:
 cpu_tile:
 	$(CC) cpu_tile.cpp main.cpp -o cpu_tile
 
+cpu_multi_threads:
+	$(CC) cpu_multi_threads.cpp main.cpp -o cpu_multi_threads -lpthread
+
 spmd:
 	$(ISPC) spmd.ispc -h spmd.h -o spmd.o
 	$(CC) spmd.o spmd.cpp -o spmd
 
 simd_avx:
-	$(CC) -mavx2 simd_avx.cpp main.cpp -o simd_avx
+	$(CC) -mavx simd_avx.cpp main.cpp -o simd_avx
 
 cuda_mat_mul:
 	$(NVCC) cuda_mat_mul.cu main.cpp -o cuda_mat_mul
@@ -28,11 +31,13 @@ cuda_mat_mul_shm:
 cuda_mat_mul_mmap:
 	$(NVCC) -D CUDA_MMAP=1 cuda_mat_mul_mmap.cu main.cpp -o cuda_mat_mul_mmap
 
-test: cpu_naive cpu_opt_loop cpu_tile spmd simd_avx cuda_mat_mul cuda_mat_mul_shm cuda_mat_mul_mmap
-	@echo -e 'Name\t\t    AvgTime(ns)\t\tAvgCycles'
+test: cpu_naive cpu_opt_loop cpu_tile cpu_multi_threads\
+spmd simd_avx cuda_mat_mul cuda_mat_mul_shm cuda_mat_mul_mmap
+	@echo -e 'Name\t\t    AvgTime(ms)\t\tAvgCycles'
 	@./cpu_naive
 	@./cpu_opt_loop
 	@./cpu_tile
+	@./cpu_multi_threads
 	@./spmd
 	@./simd_avx
 	@./cuda_mat_mul
@@ -41,6 +46,7 @@ test: cpu_naive cpu_opt_loop cpu_tile spmd simd_avx cuda_mat_mul cuda_mat_mul_sh
 
 clean:
 	-rm ./cpu_naive ./cpu_opt_loop ./cpu_tile 
+	-rm ./cpu_multi_threads
 	-rm ./spmd ./spmd.h ./spmd.o
 	-rm ./simd_avx
 	-rm ./cuda_mat_mul ./cuda_mat_mul_shm ./cuda_mat_mul_mmap

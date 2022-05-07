@@ -1,5 +1,5 @@
 #define Get(array, i, j, cols) (array[i * cols + j])
-#define TILE (8)
+#define TILE (2)
 /* A = (m x n), B = (n x k), C = (m x k) */
 static inline void ComputeTile(
     uniform int m, uniform int n, uniform int k, 

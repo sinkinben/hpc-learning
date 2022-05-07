@@ -42,7 +42,7 @@ static inline void ComputeTile(Matrix A, Matrix B, Matrix C, int x, int y)
 
 void MatrixMul(Matrix A, Matrix B, Matrix C)
 {
-    /* We use 256 bit AVX here. */
+    /* We use TILE * 32 bit AVX here. */
     assert(TILE == 8);
     for (int i = 0; i < C.rows; i += TILE)
         for (int j = 0; j < C.cols; j += TILE)
