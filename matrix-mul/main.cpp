@@ -11,7 +11,7 @@
 
 extern void MatrixMul(Matrix, Matrix, Matrix);
 
-inline void check(Matrix A, Matrix B, Matrix C)
+static inline void Check(Matrix A, Matrix B, Matrix C)
 {
     for (int i = 0; i < C.rows; ++i)
     {
@@ -40,8 +40,9 @@ inline void RunTest(int m, int n, int k, const char *name)
 
     Timer timer;
     uint64_t cycleStart = 0;
-    double totalTime = 0, totalCycles = 0;
-    for (int i = 0; i < N; ++i)
+    double totalTime = 0;
+    uint64_t totalCycles = 0;
+    for (int i = 0; i < TEST; ++i)
     {
         C.Fill(0);
         timer.reset();
@@ -50,8 +51,10 @@ inline void RunTest(int m, int n, int k, const char *name)
         totalCycles += Benchmark::GetCPUCycle() - cycleStart;
         totalTime += timer.elapsed_nano();
     }
-    PrintResult(name, (totalTime / N), (totalCycles / N));
-    check(A, B, C);
+    PrintResult(name, ((totalTime / 1e6) / TEST), (double)totalCycles / TEST);
+#ifdef OPEN_CHECKING
+    Check(A, B, C);
+#endif
     A.Destroy(), B.Destroy(), C.Destroy();
 }
 

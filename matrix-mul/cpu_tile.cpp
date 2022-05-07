@@ -1,7 +1,7 @@
 #include "matrix.h"
 #include <algorithm>
 
-static constexpr int TILE = 8;
+static constexpr int TILE = 2;
 
 /* (x, y) is the index of one tile.
  * Please note that I don't check the bounder. 
