@@ -17,6 +17,8 @@ Let's review how an instruction is executed on the CPU.
 >
 > Therefore, there are at least 3 components in abstraction of CPU core, fetch-decode unit (control unit), ALU (execution unit), a set of registers.
 
+### Cache
+
 In modern CPU, cache is one of the vital components.
 
 As the figure shown, it's a simple abstraction of a modern CPU, from the perspective of 3-level cahce.
@@ -27,6 +29,26 @@ As the figure shown, it's a simple abstraction of a modern CPU, from the perspec
 - In each core, there is at least one set of registers, to store the state of thread/process.
 
 <img src="https://raw.githubusercontent.com/Sin-Kinben/PicGo/master/img/cache.png" style="width:60%; background: white; border-radius: 0px;"/>
+
+
+
+### NUMA
+
+NUMA is "Non-Unified Memory Access".
+
+In our common sense, all the DRAM memory have equal status in front of each CPU core. But in fact, that's not true.
+
+For most modern multi-processors, they are NUMA architecture. Hence the memory access latency depends on the memory location relative to the processor.
+
+Suppose there are multiple physical CPUs on one machine.
+
+<img src="https://raw.githubusercontent.com/Sin-Kinben/PicGo/master/img/boost-numa.png" style="width:80%; background: white; border-radius: 0px;"/>
+
+All the main memory (DRAM memory) can be "seen" by all CPUs (and all cores). But for each physical processor, there are two types main memory - "local" and "remote". Accessing the "local" memory is faster than the "remote" memory.
+
+For more details, please refer to [Non-uniform memory access](https://en.wikipedia.org/wiki/Non-uniform_memory_access). In fact, NUMA will not be covered very much in this blog.
+
+
 
 **Q&A**
 
@@ -162,7 +184,7 @@ SIMT means "Single Instruction Multiple Threads".
 
 ## Exercises
 
-**Ex - 1**
+**Ex - 1: SIMD**
 
 ```cpp
 uint64_t a = 0, b = 0;
@@ -173,11 +195,11 @@ for (int i = 0; i < steps; i++) { a++; a++; }
 
 Regardless of compilation optimization, which loop is faster? 
 
-- The 1st one is faster because of the superscalar core.
+- The 1st one is faster because of SIMD optimization within CPU.
 
 <br/>
 
-**Ex - 2**
+**Ex - 2: Cache False Sharing**
 
 ```cpp
 int *a = new int[1024]; 
@@ -199,12 +221,14 @@ Which one is faster?
 - The 2nd one is faster.
 - On most machines, the size of one cache-line is 64KB.
 - For program P1, `a[0, 1, 2, 3]` will be in same one L3-cache-line. Since L1-cache is exclusive for each core, once the same cache-line is modified, the [MESI protocol](https://en.wikipedia.org/wiki/MESI_protocol) will cause multiple "cache-line write back" (from L1, write back to L3).
-  - This is called "Cache False Sharing".
+  - This is called "Cache False Sharing", i.e. two processors write to different addresses, but addresses map to the same cache line.
 - For program P2, `a[0], a[16], a[32], a[64]`, their gap is 64KB, hence they will be not in same cache-line. There is no cache-line-write-back during the loop.
+
+Another classic cache issue is "Cache Ping Pong", i.e. multi-threads write one same variable.
 
 <br/>
 
-**Ex - 3**
+**Ex - 3: CPU Cores and Threads**
 
 Suppose there are 1 CPU with 4 cores on my machine, we wirte some prorgams to implement multi-threads sorting.
 
