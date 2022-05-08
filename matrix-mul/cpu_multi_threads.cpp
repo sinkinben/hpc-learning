@@ -11,8 +11,10 @@ static inline void ComputeTile(Matrix A, Matrix B, Matrix C, int x, int y)
     {
         for (int j = y; j < y + TILE; ++j)
         {
+            float res = 0;
             for (int idx = y; idx < y + TILE; ++idx)
-                C.Get(i, j) += A.Get(i, idx) * B.Get(idx, j);
+                res += A.Get(i, idx) * B.Get(idx, j);
+            C.Get(i, j) += res;
         }
     }
 }
