@@ -1,3 +1,13 @@
+CPU Specification
+* Intel Core i5-6300HQ Processor
+* https://ark.intel.com/content/www/us/en/ark/products/88959/intel-core-i56300hq-processor-6m-cache-up-to-3-20-ghz.html
+
+
+GPU Specification
+* GTX 950M
+* https://www.nvidia.com/en-us/geforce/gaming-laptops/geforce-gtx-950m/specifications/
+
+
 SIZE = 16
 Name                AvgTime(ms)         AvgCycles
 cpu_naive           0.003600            8156.000000         
