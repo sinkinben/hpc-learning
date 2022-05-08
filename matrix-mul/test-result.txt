@@ -1,0 +1,112 @@
+SIZE = 16
+Name                AvgTime(ms)         AvgCycles
+cpu_naive           0.003600            8156.000000         
+cpu_opt_loop        0.001740            3840.000000         
+cpu_tile            0.000460            906.000000          
+cpu_multi_threads   0.122842            282352.000000       
+spmd                0.001018            2194.000000         
+simd_avx            0.000970            2074.000000         
+cuda_mat_mul        69.010054           158996524.000000    
+cuda_mat_mul_shm    35.703669           82258770.000000     
+cuda_mat_mul_mmap   0.482042            1110164.000000      
+
+SIZE = 32
+Name                AvgTime(ms)         AvgCycles
+cpu_naive           0.028640            65838.000000        
+cpu_opt_loop        0.008760            20060.000000        
+cpu_tile            0.001315            2874.000000         
+cpu_multi_threads   0.122580            281998.000000       
+spmd                0.002995            6754.000000         
+simd_avx            0.002999            6790.000000         
+cuda_mat_mul        65.952992           151953014.000000    
+cuda_mat_mul_shm    65.350818           150565780.000000    
+cuda_mat_mul_mmap   0.461221            1062288.000000      
+
+
+SIZE = 64
+Name                AvgTime(ms)         AvgCycles
+cpu_naive           0.258885            596290.000000       
+cpu_opt_loop        0.062357            143474.000000       
+cpu_tile            0.004732            10756.000000        
+cpu_multi_threads   0.112562            258728.000000       
+spmd                0.020183            46286.000000        
+simd_avx            0.011596            26560.000000        
+cuda_mat_mul        66.217643           152562774.000000    
+cuda_mat_mul_shm    36.841867           84881676.000000     
+cuda_mat_mul_mmap   0.612522            1410900.000000      
+
+
+SIZE = 128
+Name                AvgTime(ms)         AvgCycles
+cpu_naive           2.641306            6084988.000000      
+cpu_opt_loop        0.436023            1004334.000000      
+cpu_tile            0.018331            42070.000000        
+cpu_multi_threads   0.122559            281612.000000       
+spmd                0.084700            194804.000000       
+simd_avx            0.045827            105348.000000       
+cuda_mat_mul        68.671470           158216458.000000    
+cuda_mat_mul_shm    75.834480           174720010.000000    
+cuda_mat_mul_mmap   1.825709            4206038.000000      
+
+SIZE = 256
+Name                AvgTime(ms)         AvgCycles
+cpu_naive           23.161077           53362348.000000     
+cpu_opt_loop        3.272120            7538466.000000      
+cpu_tile            0.081220            186842.000000       
+cpu_multi_threads   0.164173            377536.000000       
+spmd                0.401136            923720.000000       
+simd_avx            0.194814            448584.000000       
+cuda_mat_mul        85.387312           196729378.000000    
+cuda_mat_mul_shm    55.979382           128974274.000000    
+cuda_mat_mul_mmap   9.993089            23023158.000000  
+
+SIZE = 512
+Name                AvgTime(ms)         AvgCycles
+cpu_naive           260.905973          601121462.000000    
+cpu_opt_loop        24.407043           56232752.000000     
+cpu_tile            0.433198            997676.000000       
+cpu_multi_threads   0.353403            812852.000000       
+spmd                1.444491            3327500.000000      
+simd_avx            0.890757            2051552.000000      
+cuda_mat_mul        106.786918          246033990.000000    
+cuda_mat_mul_shm    49.134699           113204184.000000    
+cuda_mat_mul_mmap   64.194357           147901968.000000   
+
+SIZE = 1024
+Name                AvgTime(ms)         AvgCycles
+cpu_naive           2553.248284         5882647990.000000   
+cpu_opt_loop        200.707009          462423812.000000    
+cpu_tile            2.355950            5427272.000000      
+cpu_multi_threads   1.121031            2581466.000000      
+spmd                6.393282            14728016.000000     
+simd_avx            5.159039            11885264.000000     
+cuda_mat_mul        292.382482          673643382.000000    
+cuda_mat_mul_shm    113.825273          262250348.000000    
+cuda_mat_mul_mmap   481.083324          1108407578.000000   
+
+SIZE = 2048
+Name                AvgTime(ms)         AvgCycles
+cpu_naive           115725.804721       266639201844.000000 
+cpu_opt_loop        2505.864412         5773641030.000000   
+cpu_tile            12.446690           28675874.000000     
+cpu_multi_threads   2.954201            6803786.000000      
+spmd                27.874894           64222898.000000     
+simd_avx            18.901237           43547242.000000     
+cuda_mat_mul        1731.578300         3989646992.000000   
+cuda_mat_mul_shm    628.384937          1447830624.000000   
+cuda_mat_mul_mmap   3779.180778         8707430418.000000   
+
+
+SIZE = 4096
+Name                AvgTime(ms)         AvgCycles
+cpu_naive           1221008.098025      2813222325596.000000
+cpu_opt_loop        22227.511285        51212259276.000000  
+cpu_tile            55.469638           127799842.000000    
+cpu_multi_threads   14.149530           32597838.000000     
+spmd                111.145709          256077710.000000    
+simd_avx            75.510188           173974062.000000    
+cuda_mat_mul        13110.551091        30206750946.000000  
+cuda_mat_mul_shm    4608.497299         10617990968.000000  
+cuda_mat_mul_mmap   31159.891356        71792483344.000000  
+
+
