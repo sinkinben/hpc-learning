@@ -2,17 +2,19 @@
 
 GEMM is "GEneral Matrix Multiplication", that is we won't considering some special cases, e.g. sparse matrix.
 
-In this blog, I will introduce some optimization methods of GEMM, including these subjects:
+In this blog, I will introduce some optimization methods of GEMM step by step, including these subjects:
 
 - CPU Cache
   - Naive GEMM on CPU
-  - Cache-friendly GEMM
+  - Row-oriented (Cache-friendly)
+  - Divide matrix in tiles (more cache-friendly)
+  - Multiple threads
 - GPU and CUDA programming
   - Naive GEMM using CUDA
   - Shared memory within each block
-  - Memory mapping between host and device (to reduce the latency of memory copy)
+  - Memory mapping between host and device (to reduce the latency of memory-copy)
 
-You can find the source code in [this repo](https://github.com/sinkinben/hpc-learning/).
+You can find all the source code in [this repo](https://github.com/sinkinben/hpc-learning/).
 
 
 
@@ -78,7 +80,7 @@ This naive method is very slow, since it accesses matrix `B` in a column-oriente
 
 
 
-### Optimize the Loop to Row-oriented
+### Row-oriented
 
 ```cpp
 void MatrixMul(Matrix A, Matrix B, Matrix C)
@@ -93,7 +95,7 @@ void MatrixMul(Matrix A, Matrix B, Matrix C)
 
 Now, the three matrices are accessed in row-oriented way.
 
-Let compare the "naive" method and "row-oriented" method. The result of simple test is as follows.
+Let's compare the "naive" method and "row-oriented" method via a simple test.
 
 ```text
 Name                AvgTime(ms)         AvgCycles
@@ -103,7 +105,7 @@ cpu_opt_loop        205.974141          474561720.000000
 
 
 
-### Divide the Matrix in Tiles
+### Divide Matrix in Tiles
 
 ```cpp
 static constexpr int TILE = 2;
@@ -132,14 +134,7 @@ Why I set `TILE = 2`?
 - That is, one tile of each matrix has `2 * 2 = 4` float elements, totally 12 float.
 - If we set `TILE = 4`, then totally `4 * 4 * 3 = 48` float, beyond one cache line.
 
-The test result is:
 
-```
-Name                AvgTime(ms)         AvgCycles
-cpu_naive           2776.960052         6398105160.000000   
-cpu_opt_loop        204.882164          472046306.000000    
-cpu_tile            3.046312            7018170.000000    
-```
 
 
 
@@ -157,8 +152,10 @@ static inline void ComputeTile(Matrix A, Matrix B, Matrix C, int x, int y)
     {
         for (int j = y; j < y + TILE; ++j)
         {
+            float res = 0;
             for (int idx = y; idx < y + TILE; ++idx)
-                C.Get(i, j) += A.Get(i, idx) * B.Get(idx, j);
+                res += A.Get(i, idx) * B.Get(idx, j);
+            C.Get(i, j) += res;
         }
     }
 }
@@ -246,11 +243,6 @@ Intel has "invented" some magic instructions, such as MMX, SSE, AXV.
 For more details, you should read [Intel Intrinsics Guide](https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#techs=AVX2).
 
 ```cpp
-/* Matrix multiplication based on AVX (Advanced Vector Extensions)
- * instructions. You need to add '-mavx' flag into gcc/g++ arguments.
- * However, it seems that AVX is not always good. Linus have criticized
- * it very fiercely.
- */
 #include <immintrin.h>
 #include <x86intrin.h>
 #include "matrix.h"
@@ -296,33 +288,40 @@ void MatrixMul(Matrix A, Matrix B, Matrix C)
 
 
 
-### Summary
+### Tests
 
 Let's put them together.
 
 ```text
+SIZE = 1024
 Name                AvgTime(ms)         AvgCycles
-cpu_naive           2680.435589         6175446794.000000   
-cpu_opt_loop        196.381211          452439984.000000    
-cpu_tile            3.058074            7044974.000000      
-cpu_multi_threads   1.057930            2400164.000000      
-spmd                6.482432            14932586.000000     
-simd_avx            5.123801            11803518.000000   
+cpu_naive           2547.440247         5869340770.000000   
+cpu_opt_loop        191.350930          440873452.000000    
+cpu_tile            2.353521            5421522.000000      
+cpu_multi_threads   0.881988            2030816.000000      
+spmd                5.795940            13352020.000000     
+simd_avx            4.246814            9783934.000000  
 ```
 
-However, the simple numbers DO NOT represent the method is good or bad (but `cpu_naive` and `cpu_opt_loop` is very bad, absolutely). The arguments of hardware on the machine will effect the performance of these methods, such as cache-size.
+However, the simple numbers DO NOT represent one method is good or bad (but `cpu_naive` and `cpu_opt_loop` is very bad, absolutely). The arguments of hardware on the machine will effect the performance of these methods, such as cache-size.
 
 For example, in the above data, `simd_avx` is slower than `cpu_tile`.
 
 - In `cpu_tile`, `TILE = 2`, the tiles of `A, B, C` is cache-friendly. They can put into one cache-line.
 - In `simd_avx`, we set `TILE = 8` since we want to use `AVX256`. So each tile of one matrix has 64 floats, they can not put into one cache-line. This is why `simd_avx` slower.
-- But on others machines with larger L1-cache/L2-cache, `simd_avx` may faster I think. 
+- But on others machines with larger L1-cache/L2-cache, `simd_avx` may faster, I think. 
 
 Anyway, it can shows that these techniques (cache-friendly, SIMD, SPMD, AVX) do have an positive effect on GEMM.
 
 
 
 ## GEMM on GPU
+
+- In CUDA programming, we need to copy the host-memory to device-memory, I think the latency of memory-copy should be included in time of GEMM.
+- In modern GPUs the shared memory size is only 64KB, while the register file size is 256KB. We should remember this when writing CUDA code.
+- Before you read this section, you should have an overview of GPU and CUDA, refer to [this blog](https://www.cnblogs.com/sinkinben/p/16222581.html).
+
+
 
 ### Matrix class 
 
@@ -331,6 +330,10 @@ I have made a special adaptation on `Matrix` class for using CUDA, see `include/
 
 
 ### Naive method
+
+I "borrow" this figure from [Nvidia CUDA Guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#async_prog_model_intro).
+
+<img src="https://docs.nvidia.com/cuda/cuda-c-programming-guide/graphics/matrix-multiplication-without-shared-memory.png" style="width:50%" />
 
 ```cpp
 #include "cuda_matrix.h"
@@ -380,6 +383,11 @@ __host__ void MatrixMul(Matrix A, Matrix B, Matrix C)
 
 ### Shared Memory
 
+- In naive method, we need to access elements from global memory (which is very "far" from SMs of GPU).
+- Within each block, there is 64KB shared memory, we can leverage it.
+
+<img src="https://docs.nvidia.com/cuda/cuda-c-programming-guide/graphics/matrix-multiplication-with-shared-memory.png" />
+
 ```cpp
 #include "cuda_matrix.h"
 __global__ void DeviceMatrixMul(Matrix A, Matrix B, Matrix C)
@@ -411,9 +419,14 @@ __global__ void DeviceMatrixMul(Matrix A, Matrix B, Matrix C)
 }
 ```
 
+The `MatrixMul` is same with naive method, omit it here.
+
 
 
 ### Memory Mapping
+
+- In above code, we need to copy host-memory to device-memory. We can use "Memory Mapping" to reduce it.
+- However, it seems that for very large matrix, `mmap` is slower than naive method. That's because each time SM need to access very "far" memory in host, while naive method only accesses them in relatively close device-memory.
 
 ```cpp
 /* Matrix Multiplication on CUDA, based on block shared memory and memory mapping. */
@@ -471,18 +484,37 @@ void MatrixMul(Matrix A, Matrix B, Matrix C)
 
 
 
-## Summary
+### Tests
+
+The result "mmap" seems special, we will explain this result in "Evaluation" section.
 
 ```
+SIZE = 16
 Name                AvgTime(ms)         AvgCycles
-cpu_naive           2539.143595         5850158438.000000   
-cpu_opt_loop        190.819838          439645558.000000    
-cpu_tile            3.046958            7019208.000000      
-cpu_multi_threads   1.057045            2434420.000000      
-spmd                5.727364            13194110.000000     
-simd_avx            4.206206            9689640.000000      
+cuda_mat_mul        68.517565           157858096.000000    
+cuda_mat_mul_shm    35.874186           82649984.000000     
+cuda_mat_mul_mmap   0.390858            900192.000000   
+
+SIZE = 1024
+Name                AvgTime(ms)         AvgCycles   
 cuda_mat_mul        285.567492          657942456.000000    
 cuda_mat_mul_shm    131.548488          303084320.000000    
-cuda_mat_mul_mmap   484.942781          1117301924.000000   
+cuda_mat_mul_mmap   484.942781          1117301924.000000       
 ```
+
+
+
+## Evaluation
+
+
+
+|                           CPU - 1                            |                           CPU - 2                            |                           CPU - 3                            |
+| :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+| <img src="https://raw.githubusercontent.com/Sin-Kinben/PicGo/master/img/cpu-gemm-16-128.png"/> | <img src="https://raw.githubusercontent.com/Sin-Kinben/PicGo/master/img/cpu-gemm-256-1024.png"/> | <img src="https://raw.githubusercontent.com/Sin-Kinben/PicGo/master/img/cpu-gemm-2048-4096.png"/> |
+
+
+
+|                           GPU - 1                            |                           GPU - 2                            |
+| :----------------------------------------------------------: | :----------------------------------------------------------: |
+| <img src="https://raw.githubusercontent.com/Sin-Kinben/PicGo/master/img/gpu-gemm-256.png"/> | <img src="https://raw.githubusercontent.com/Sin-Kinben/PicGo/master/img/gpu-gemm-4096.png"/> |
 
