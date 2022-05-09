@@ -28,3 +28,6 @@ $(OBJDIR)/%.o: $(COMMONDIR)/%.cpp
 
 $(OBJDIR)/%.o: %.cpp
 	$(CXX) $< $(CXXFLAGS) -c -o $@
+
+mymain: mymain.cpp
+	$(CXX) $(CXXFLAGS) tasksys.cpp mymain.cpp -o mymain -lm -lpthread
