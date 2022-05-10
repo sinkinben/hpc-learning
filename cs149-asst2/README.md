@@ -1,3 +1,16 @@
+> Stanford CS149: Assignment 2
+>
+> Its main task is to implement three types of thread pool.
+>
+> **Part A**
+> + Spawn: When calling `run(*f, n)`, create `num_threads` threads to run `f(0), ..., f(n-1)`. And then destroy these threads via `join()`.
+> + Spinning: Create `num_threads` in constructor in advance, and let them spin. When calling `run(*f, n)`, let these threads run `f(0), ..., f(n-1)`.
+> + Sleeping: Create `num_threads` in constructor in advance. If there is no job, let them sleep, free the resource of CPU. When calling `run(*f, n)`, wake up some threads to run `f(0), ..., f(n-1)`.
+>
+> **Part B**
+>
+> For "Sleeping Thread Pool" in Part A, implement a scheduler, to support the DAG dependencies among tasks.
+
 
 # Assignment 2: Building A Task Execution Library (from the Ground Up) #
 
