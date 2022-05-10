@@ -172,11 +172,16 @@ void TaskSystemParallelThreadPoolSleeping::addBatchTasks(IRunnable *runnable, in
     }
 }
 
+void TaskSystemParallelThreadPoolSleeping::tasksBarrier()
+{
+    std::unique_lock<std::mutex> lock(mtx_all_tasks_done);
+    cv_all_tasks_done.wait(lock, [this]() { return remained_tasks.load() == 0; } );
+}
+
 void TaskSystemParallelThreadPoolSleeping::run(IRunnable *runnable, int num_total_tasks)
 {
     addBatchTasks(runnable, num_total_tasks);
-    std::unique_lock<std::mutex> lock(mtx_all_tasks_done);
-    cv_all_tasks_done.wait(lock, [this]() { return remained_tasks.load() == 0; } );
+    tasksBarrier();
 }
 
 TaskID TaskSystemParallelThreadPoolSleeping::runAsyncWithDeps(IRunnable* runnable, int num_total_tasks, const std::vector<TaskID>& deps)
@@ -199,24 +204,30 @@ TaskID TaskSystemParallelThreadPoolSleeping::runAsyncWithDeps(IRunnable* runnabl
 void TaskSystemParallelThreadPoolSleeping::sync()
 {
     TaskID id;
+    std::queue<TaskID> next_que;
     while (!ready_que.empty())
     {
-        id = ready_que.front(), ready_que.pop();
-
-        AsyncTask task = tasks_collect[id];
-        run(task.first, task.second);
-
-        for (int next : graph[id])
+        while (!ready_que.empty())
         {
-            assert(indeg.count(next));
-            indeg[next]--;
-            if (indeg[next] == 0)
+            id = ready_que.front(), ready_que.pop();
+            AsyncTask task = tasks_collect[id];
+            addBatchTasks(task.first, task.second);
+
+            for (int next : graph[id])
             {
-                ready_que.emplace(next);
-                indeg.erase(next);
+                /* assert(indeg.count(next)); */
+                indeg[next]--;
+                if (indeg[next] == 0)
+                {
+                    next_que.emplace(next);
+                    indeg.erase(next);
+                }
             }
+            /* remove it from the graph */
+            graph.erase(id);
         }
-        graph.erase(id);
+        std::swap(ready_que, next_que);
+        tasksBarrier();
     }
     return;
 }

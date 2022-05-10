@@ -83,6 +83,7 @@ public:
     void sync();
 
     void addBatchTasks(IRunnable *runnable, int num_tasks);
+    void tasksBarrier();
 
 protected:
     std::atomic_bool stop;
@@ -104,6 +105,9 @@ protected:
     std::unordered_map<int, int> indeg;
     std::unordered_map<int, std::unordered_set<int>> graph;
 
+    /* AsyncTask = (IRunnable *, num_tasks)
+     * tasks_collect = task_id -> AsyncTask
+     */
     using AsyncTask = std::pair<IRunnable *, int>;
     std::unordered_map<int, AsyncTask> tasks_collect;
 
