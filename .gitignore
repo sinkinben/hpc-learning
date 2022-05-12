@@ -1,1 +1,6 @@
 .vscode/
+# bin files
+bin.graph
+graphTools
+pr
+pr_grader
