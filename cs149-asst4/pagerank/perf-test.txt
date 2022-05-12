@@ -1,0 +1,31 @@
+
+./pr ~/workspace/all_graphs/xxxx.graph 4
+
+----------------------------------------------------------
+Max system threads = 4
+Running with 4 threads
+----------------------------------------------------------
+
+Graph: soc-livejournal1_68m.graph
+  Edges: 68993773
+  Nodes: 4847571
+ref_time: 6.19454s
+stu_time: 6.32603s
+
+Graph: com-orkut_117m.graph
+  Edges: 117185083
+  Nodes: 3072441
+ref_time: 6.10494s
+stu_time: 6.17755s
+
+Graph: rmat_200m.graph
+  Edges: 199491925
+  Nodes: 33554432
+ref_time: 34.0156s
+stu_time: 34.2834s
+
+Graph: random_500m.graph
+  Edges: 499999944
+  Nodes: 50000000
+ref_time: 94.0277
+stu_time: 94.0856

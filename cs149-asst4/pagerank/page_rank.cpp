@@ -5,7 +5,7 @@
 #include <omp.h>
 #include <utility>
 #include <algorithm>
-
+#include <atomic>
 #include "../common/CycleTimer.h"
 #include "../common/graph.h"
 
@@ -26,11 +26,12 @@ void pageRank(Graph g, double *solution, double damping, double convergence)
     int numNodes = num_nodes(g);
     double equal_prob = 1.0 / numNodes;
     Vertex *sink_nodes = new Vertex[numNodes];
-    int num_sinks = 0;
+    std::atomic_int num_sinks(0);
 
     /* collect all vertices with no outgoing edges, and
      * init solution[i] with equal probability
      */
+#pragma omp parallel for
     for (int i = 0; i < numNodes; ++i)
     {
         solution[i] = equal_prob;
@@ -45,8 +46,9 @@ void pageRank(Graph g, double *solution, double damping, double convergence)
 
     while (!converged)
     {
-        /* traverse vertices with no outgoing edges */
+        /* collect vertices with no outgoing edges */
         double sink_val = 0;
+#pragma omp parallel for reduction (+: sink_val)
         for (int i = 0; i < num_sinks; ++i)
         {
             int u = sink_nodes[i];
@@ -54,6 +56,7 @@ void pageRank(Graph g, double *solution, double damping, double convergence)
         }
         sink_val = sink_val * damping / numNodes;
 
+#pragma omp parallel for 
         for (int v = 0; v < numNodes; ++v)
         {
             /* result of score_new[v] */
@@ -69,6 +72,7 @@ void pageRank(Graph g, double *solution, double damping, double convergence)
         }
 
         double diff = 0.0;
+#pragma omp parallel for reduction (+: diff)
         for (int i = 0; i < numNodes; ++i)
         {
             diff += std::abs(score_new[i] - solution[i]);
