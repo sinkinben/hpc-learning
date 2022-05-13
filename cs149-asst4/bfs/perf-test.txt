@@ -1,0 +1,73 @@
+Running with 4 threads
+
+Graph: grid1000x1000.graph
+
+Top down bfs
+ref_time: 0.0522614s
+stu_time: 0.0238382s
+
+Bottom up bfs
+ref_time: 1.99078s
+stu_time: 2.06065s
+
+Hybrid bfs
+ref_time: 0.619969s
+stu_time: 0.0234773s
+
+Graph: soc-livejournal1_68m.graph
+
+Top down bfs
+ref_time: 0.319429s
+stu_time: 0.2872s
+
+Bottom up bfs
+ref_time: 0.225471s
+stu_time: 0.457324s
+
+Hybrid bfs
+ref_time: 0.12826s
+stu_time: 0.278117s
+
+Graph: com-orkut_117m.graph
+
+Top down bfs
+ref_time: 0.348994s
+stu_time: 0.379418s
+
+Bottom up bfs
+ref_time: 0.205897s
+stu_time: 0.415298s
+
+Hybrid bfs
+ref_time: 0.0869427s
+stu_time: 0.387635s
+
+# This case will cause out-of-memory on my machine (8GB memory)
+Graph: random_500m.graph
+
+Top down bfs
+ref_time: 9.18129s
+stu_time: 9.75597s
+
+Bottom up bfs
+ref_time: 22.8771s
+stu_time: 37.9669s
+
+Hybrid bfs
+ref_time: 4.47132s
+stu_time: 2.35512s
+
+
+--------------------------------------------------------------------------
+SCORES :                    |   Top-Down    |   Bott-Up    |    Hybrid    |
+--------------------------------------------------------------------------
+grid1000x1000.graph         |      2.00 / 2 |     3.00 / 3 |     3.00 / 3 |
+--------------------------------------------------------------------------
+soc-livejournal1_68m.graph  |      2.00 / 2 |     1.77 / 3 |     1.52 / 3 |
+--------------------------------------------------------------------------
+com-orkut_117m.graph        |      2.00 / 2 |     1.92 / 3 |     0.60 / 3 |
+--------------------------------------------------------------------------
+rmat_200m.graph             |      7.00 / 7 |     7.15 / 8 |     8.00 / 8 |
+--------------------------------------------------------------------------
+TOTAL                                                      |  39.97 / 70 |
+--------------------------------------------------------------------------
