@@ -117,25 +117,37 @@ void bottom_up_step(
     Graph g, vertex_set *frontier, vertex_set *new_frontier,
     int *distances, int num_itorations)
 {
-    for (int v = 0; v < g->num_nodes; ++v)
+    #pragma omp parallel
     {
-        /* traverse all vertices that are not visited */
-        if (distances[v] != NOT_VISITED_MARKER)
-            continue;
-        
-        /* traverse all incoming edges of v */
-        const Vertex *end = incoming_end(g, v);
-        for (const Vertex *ptr = incoming_begin(g, v); ptr != end; ++ptr)
+        /* thread local */
+        int *local_frontier = new int[g->num_nodes];
+        int local_cnt = 0;
+
+        #pragma omp for schedule(dynamic, 200)
+        for (int v = 0; v < g->num_nodes; ++v)
         {
-            int u = *ptr;
-            /* if u is in current frontier set, then add v into new_frontier */
-            if (distances[u] == num_itorations)
+            /* traverse all vertices that are not visited */
+            if (distances[v] != NOT_VISITED_MARKER)
+                continue;
+            
+            /* traverse all incoming edges of v */
+            const Vertex *end = incoming_end(g, v);
+            for (auto ptr = incoming_begin(g, v); ptr != end; ++ptr)
             {
-                distances[v] = num_itorations + 1;
-                new_frontier->vertices[new_frontier->count++] = v;
-                break;
+                int u = *ptr;
+                /* if u is in current frontier set, then add v into new_frontier */
+                if (distances[u] == num_itorations)
+                {
+                    distances[v] = num_itorations + 1;
+                    local_frontier[local_cnt++] = v;
+                    break;
+                }
             }
         }
+
+        int offset = __sync_fetch_and_add(&new_frontier->count, local_cnt);
+        memcpy(new_frontier->vertices + offset, local_frontier, sizeof(int) * local_cnt);
+        delete[] local_frontier;
     }
 }
 
