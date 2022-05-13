@@ -34,13 +34,13 @@ void top_down_step(
     vertex_set *new_frontier,
     int *distances)
 {
-    #pragma omp parallel
+#pragma omp parallel
     {
         /* thread local frontier */
         int *local_frontier = new int[g->num_nodes];
         int local_cnt = 0;
 
-        #pragma omp for
+#pragma omp for
         for (int i = 0; i < frontier->count; i++)
         {
             int node = frontier->vertices[i];
@@ -81,8 +81,8 @@ void bfs_top_down(Graph graph, solution *sol)
     vertex_set *frontier = &list1;
     vertex_set *new_frontier = &list2;
 
-// initialize all nodes to NOT_VISITED
-    #pragma omp parallel for
+    // initialize all nodes to NOT_VISITED
+#pragma omp parallel for
     for (int i = 0; i < graph->num_nodes; ++i)
         sol->distances[i] = NOT_VISITED_MARKER;
 
@@ -117,19 +117,19 @@ void bottom_up_step(
     Graph g, vertex_set *frontier, vertex_set *new_frontier,
     int *distances, int num_itorations)
 {
-    #pragma omp parallel
+#pragma omp parallel
     {
         /* thread local */
         int *local_frontier = new int[g->num_nodes];
         int local_cnt = 0;
 
-        #pragma omp for schedule(dynamic, 200)
+#pragma omp for schedule(dynamic, 200)
         for (int v = 0; v < g->num_nodes; ++v)
         {
             /* traverse all vertices that are not visited */
             if (distances[v] != NOT_VISITED_MARKER)
                 continue;
-            
+
             /* traverse all incoming edges of v */
             const Vertex *end = incoming_end(g, v);
             for (auto ptr = incoming_begin(g, v); ptr != end; ++ptr)
@@ -164,8 +164,8 @@ void bfs_bottom_up(Graph graph, solution *sol)
     vertex_set *frontier = &list1;
     vertex_set *new_frontier = &list2;
 
-    // initialize all nodes to NOT_VISITED
-    #pragma omp for
+// initialize all nodes to NOT_VISITED
+#pragma omp for
     for (int i = 0; i < graph->num_nodes; ++i)
         sol->distances[i] = NOT_VISITED_MARKER;
 
@@ -187,8 +187,35 @@ void bfs_bottom_up(Graph graph, solution *sol)
 
 void bfs_hybrid(Graph graph, solution *sol)
 {
-    // CS149 students:
-    //
-    // You will need to implement the "hybrid" BFS here as
-    // described in the handout.
+    vertex_set list1;
+    vertex_set list2;
+    vertex_set_init(&list1, graph->num_nodes);
+    vertex_set_init(&list2, graph->num_nodes);
+
+    vertex_set *frontier = &list1;
+    vertex_set *new_frontier = &list2;
+
+    // initialize all nodes to NOT_VISITED
+    #pragma omp for
+    for (int i = 0; i < graph->num_nodes; ++i)
+        sol->distances[i] = NOT_VISITED_MARKER;
+
+    // setup frontier with the root node
+    frontier->vertices[frontier->count++] = ROOT_NODE_ID;
+    sol->distances[ROOT_NODE_ID] = 0;
+
+    int num_iterations = 0;
+    constexpr int threshold = int(1e7);
+    while (frontier->count != 0)
+    {
+        vertex_set_clear(new_frontier);
+        if (frontier->count < threshold)
+            top_down_step(graph, frontier, new_frontier, sol->distances);
+        else
+            bottom_up_step(graph, frontier, new_frontier, sol->distances, num_iterations);
+        num_iterations += 1;
+
+        // swap pointers
+        std::swap(new_frontier, frontier);
+    }
 }
