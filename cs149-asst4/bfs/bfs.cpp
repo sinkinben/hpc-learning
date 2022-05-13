@@ -5,6 +5,7 @@
 #include <string.h>
 #include <cstddef>
 #include <omp.h>
+#include <algorithm>
 
 #include "../common/CycleTimer.h"
 #include "../common/graph.h"
@@ -112,19 +113,64 @@ void bfs_top_down(Graph graph, solution *sol)
     }
 }
 
+void bottom_up_step(
+    Graph g, vertex_set *frontier, vertex_set *new_frontier,
+    int *distances, int num_itorations)
+{
+    for (int v = 0; v < g->num_nodes; ++v)
+    {
+        /* traverse all vertices that are not visited */
+        if (distances[v] != NOT_VISITED_MARKER)
+            continue;
+        
+        /* traverse all incoming edges of v */
+        const Vertex *end = incoming_end(g, v);
+        for (const Vertex *ptr = incoming_begin(g, v); ptr != end; ++ptr)
+        {
+            int u = *ptr;
+            /* if u is in current frontier set, then add v into new_frontier */
+            if (distances[u] == num_itorations)
+            {
+                distances[v] = num_itorations + 1;
+                new_frontier->vertices[new_frontier->count++] = v;
+                break;
+            }
+        }
+    }
+}
+
+/* For more details of Bottom Up BFS, refer to:
+ * https://people.csail.mit.edu/jshun/6886-s18/lectures/lecture4-1.pdf
+ */
 void bfs_bottom_up(Graph graph, solution *sol)
 {
-    // CS149 students:
-    //
-    // You will need to implement the "bottom up" BFS here as
-    // described in the handout.
-    //
-    // As a result of your code's execution, sol.distances should be
-    // correctly populated for all nodes in the graph.
-    //
-    // As was done in the top-down case, you may wish to organize your
-    // code by creating subroutine bottom_up_step() that is called in
-    // each step of the BFS process.
+    vertex_set list1;
+    vertex_set list2;
+    vertex_set_init(&list1, graph->num_nodes);
+    vertex_set_init(&list2, graph->num_nodes);
+
+    vertex_set *frontier = &list1;
+    vertex_set *new_frontier = &list2;
+
+    // initialize all nodes to NOT_VISITED
+    #pragma omp for
+    for (int i = 0; i < graph->num_nodes; ++i)
+        sol->distances[i] = NOT_VISITED_MARKER;
+
+    // setup frontier with the root node
+    frontier->vertices[frontier->count++] = ROOT_NODE_ID;
+    sol->distances[ROOT_NODE_ID] = 0;
+
+    int num_iterations = 0;
+    while (frontier->count != 0)
+    {
+        vertex_set_clear(new_frontier);
+        bottom_up_step(graph, frontier, new_frontier, sol->distances, num_iterations);
+        num_iterations += 1;
+
+        // swap pointers
+        std::swap(new_frontier, frontier);
+    }
 }
 
 void bfs_hybrid(Graph graph, solution *sol)
