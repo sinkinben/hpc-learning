@@ -46,3 +46,8 @@ $(OBJDIR)/%.o: %.cpp
 
 $(OBJDIR)/%.o: %.cu
 		$(NVCC) $< $(NVCCFLAGS) -c -o $@
+
+run:
+	make clean
+	$(NVCC) $(NVCCFLAGS) saxpy.cu main.cpp -o cudaSaxpy
+	./cudaSaxpy
