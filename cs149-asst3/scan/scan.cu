@@ -53,13 +53,16 @@ __global__ void downSweep(int *arr, int N, int d)
 // exclusive_scan --
 void exclusive_scan(int *input, int N, int *result)
 {
-    constexpr int blockDim = 512;
+    constexpr int block = 512;
 
     // up sweep
-    for (int d = 1; d <= N / 2; d *= 2)
+    for (int d = N / 2, offset = 1; d >= 1; d /= 2, offset *= 2)
     {
-        int gridDim = (N / (d * 2)) / blockDim + 1;
-        upSweep<<<gridDim, blockDim>>>(result, N, d);
+        int grid = d / block;
+        if (grid > 0)
+            upSweep<<<grid, block>>>(result, N, offset);
+        else
+            upSweep<<<1, d>>>(result, N, offset);
     }
     cudaCheckError(cudaDeviceSynchronize());
 
@@ -67,10 +70,13 @@ void exclusive_scan(int *input, int N, int *result)
     cudaMemcpy(&result[N - 1], &zero, sizeof(int), cudaMemcpyHostToDevice);
 
     // down sweep
-    for (int d = N / 2; d >= 1; d /= 2)
+    for (int d = 1, offset = N / 2; d < N; d *= 2, offset /= 2)
     {
-        int gridDim = (N / (d * 2)) / blockDim + 1;
-        downSweep<<<gridDim, blockDim>>>(result, N, d);
+        int grid = d / block;
+        if (grid > 0)
+            downSweep<<<grid, block>>>(result, N, offset);
+        else
+            downSweep<<<1, d>>>(result, N, offset);
     }
 }
 
