@@ -17,8 +17,7 @@ CXX=g++ -m64
 CXXFLAGS=-O3 -Wall
 LDFLAGS=-L/usr/local/cuda/lib64/ -lcudart
 NVCC=nvcc
-NVCCFLAGS=-O3 -m64 --gpu-architecture compute_35
-
+NVCCFLAGS=-O3 -m64
 
 OBJS=$(OBJDIR)/main.o  $(OBJDIR)/scan.o
 
@@ -40,10 +39,10 @@ check_find_repeats: default
 				./checker.pl find_repeats
 
 $(EXECUTABLE): dirs $(OBJS)
-		$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS)
+		$(NVCC) $(NVCCFLAGS) -o $@ $(OBJS)
 
 $(OBJDIR)/%.o: %.cpp
-		$(CXX) $< $(CXXFLAGS) -c -o $@
+		$(NVCC) $< $(NVCCFLAGS) -c -o $@
 
 $(OBJDIR)/%.o: %.cu
 		$(NVCC) $< $(NVCCFLAGS) -c -o $@
