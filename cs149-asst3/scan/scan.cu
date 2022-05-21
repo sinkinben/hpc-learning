@@ -15,6 +15,14 @@
 
 #define THREADS_PER_BLOCK 256
 
+__global__ void print(int *arr, int N)
+{
+    printf("CUDA arr\n");
+    for (int i = 0; i < N; ++i)
+        printf("%d ", arr[i]);
+    printf("\n");
+}
+
 // helper function to round an integer up to the next power of 2
 static inline int nextPow2(int n)
 {
@@ -165,28 +173,52 @@ double cudaScanThrust(int *inarray, int *end, int *resultarray)
     return overallDuration;
 }
 
+__global__ void adjacentEqual(int *input, int *output, int N)
+{
+    int idx = blockDim.x * blockIdx.x + threadIdx.x;
+    output[idx] = (idx + 1 < N) && (input[idx] == input[idx + 1]);
+}
+__global__ void collectRepeats(int *prefix_sum, int *output, int N)
+{
+    int idx = blockDim.x * blockIdx.x + threadIdx.x;
+    if (idx + 1 < N && (prefix_sum[idx + 1] - prefix_sum[idx] == 1))
+    {
+        output[prefix_sum[idx]] = max(output[prefix_sum[idx]], idx);
+    }
+}
+
 // find_repeats --
 //
 // Given an array of integers `device_input`, returns an array of all
 // indices `i` for which `device_input[i] == device_input[i+1]`.
 //
 // Returns the total number of pairs found
-int find_repeats(int *device_input, int length, int *device_output)
+int find_repeats(int *device_input, int N, int *device_output, int *equal_res)
 {
+    int rounded = nextPow2(N);
 
-    // CS149 TODO:
-    //
-    // Implement this function. You will probably want to
-    // make use of one or more calls to exclusive_scan(), as well as
-    // additional CUDA kernel launches.
-    //
-    // Note: As in the scan code, the calling code ensures that
-    // allocated arrays are a power of 2 in size, so you can use your
-    // exclusive_scan function with them. However, your implementation
-    // must ensure that the results of find_repeats are correct given
-    // the actual array length.
+    constexpr int block = 16;
+    int grid = (N + block - 1) / block;
 
-    return 0;
+    adjacentEqual<<<grid, block>>>(device_input, equal_res, N);
+    cudaCheckError(cudaDeviceSynchronize());
+
+    exclusive_scan(nullptr, rounded, equal_res);
+    cudaCheckError(cudaDeviceSynchronize());
+
+    // print<<<1, 1>>>(equal_res, N);
+    // cudaCheckError(cudaDeviceSynchronize());
+
+    collectRepeats<<<grid, block>>>(equal_res, device_output, N);
+    cudaCheckError(cudaDeviceSynchronize());
+
+    // print<<<1, 1>>>(device_output, N);
+    // cudaCheckError(cudaDeviceSynchronize());
+
+    int cnt = 0;
+    cudaCheckError(cudaMemcpy(&cnt, &equal_res[N - 1], sizeof(int), cudaMemcpyDeviceToHost));
+
+    return cnt;
 }
 
 //
@@ -198,16 +230,17 @@ double cudaFindRepeats(int *input, int length, int *output, int *output_length)
 
     int *device_input;
     int *device_output;
+    int *buffer;
     int rounded_length = nextPow2(length);
 
-    cudaMalloc((void **)&device_input, rounded_length * sizeof(int));
-    cudaMalloc((void **)&device_output, rounded_length * sizeof(int));
-    cudaMemcpy(device_input, input, length * sizeof(int), cudaMemcpyHostToDevice);
+    cudaCheckError(cudaMalloc((void **)&device_input, rounded_length * sizeof(int)));
+    cudaCheckError(cudaMalloc((void **)&device_output, rounded_length * sizeof(int)));
+    cudaCheckError(cudaMalloc((void **)&buffer, rounded_length * sizeof(int)));
+    cudaCheckError(cudaMemcpy(device_input, input, length * sizeof(int), cudaMemcpyHostToDevice));
 
     cudaDeviceSynchronize();
     double startTime = CycleTimer::currentSeconds();
-
-    int result = find_repeats(device_input, length, device_output);
+    int result = find_repeats(device_input, length, device_output, buffer);
 
     cudaDeviceSynchronize();
     double endTime = CycleTimer::currentSeconds();
@@ -218,6 +251,7 @@ double cudaFindRepeats(int *input, int length, int *output, int *output_length)
 
     cudaFree(device_input);
     cudaFree(device_output);
+    cudaFree(buffer);
 
     float duration = endTime - startTime;
     return duration;
