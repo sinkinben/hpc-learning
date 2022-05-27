@@ -15,9 +15,11 @@ The map function should be **side-effect free**.
 
 ## Inclusive and Exclusive Scan
 
-实际上是是否包括 `nums[i]` 的前缀和（默认使用 `std::plus<>` 作为操作符）。
+Inclusive/exclusive 表示是否包括 `nums[i]` 的前缀和（默认使用 `std::plus<>` 作为操作符）。
 
 - `std::exclusive_scan`
 - `std::includesive_scan`
 
 https://en.cppreference.com/w/cpp/algorithm/inclusive_scan
+
+串行算法是 `O(N)` 的，并行的 `O(1.5 * N)` 算法是重点。

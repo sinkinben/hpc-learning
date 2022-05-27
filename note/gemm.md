@@ -1,6 +1,6 @@
 ## General Matrix Multiplication
 
-GEMM is "GEneral Matrix Multiplication", that is we won't considering some special cases, e.g. sparse matrix.
+GEMM is "General Matrix Multiplication", that is we won't consider optimizing some special cases, e.g. sparse matrix.
 
 In this blog, I will introduce some optimization methods of GEMM step by step, including these subjects:
 
@@ -188,7 +188,7 @@ void MatrixMul(Matrix A, Matrix B, Matrix C)
 
 ISPC is "Intel SPMD Compiler". For more details of ISPC, refer to [IPSC User Guide](https://ispc.github.io/ispc.html).
 
-But it seems that the ISPC code I wrote is very terrible `:-D`, its performance is just-so-so. Maybe I should use `foreach, task` in ISPC to optimize it. 
+But it seems that I wrote ISPC code in a naive way `:-D`, its performance is just-so-so. Maybe I should use `foreach, task` in ISPC to optimize it. 
 
 ```c
 #define Get(array, i, j, cols) (array[i * cols + j])
@@ -311,7 +311,7 @@ For example, in the above data, `simd_avx` is slower than `cpu_tile`.
 - In `simd_avx`, we set `TILE = 8` since we want to use `AVX256`. So each tile of one matrix has 64 floats, they can not put into one cache-line. This is why `simd_avx` slower.
 - But on others machines with larger L1-cache/L2-cache, `simd_avx` may faster, I think. 
 
-Anyway, it can shows that these techniques (cache-friendly, SIMD, SPMD, AVX) do have an positive effect on GEMM.
+Anyway, it shows that these techniques (cache-friendly, SIMD, SPMD, AVX) do have an positive effect on GEMM.
 
 
 
@@ -488,6 +488,9 @@ void MatrixMul(Matrix A, Matrix B, Matrix C)
 
 The result "mmap" seems special, we will explain this result in "Evaluation" section.
 
+- When size of matrices is very very small, e.g. `SIZE <= 128`, `mmap` method is faster than naive method and `shm` method, since it reduces the latency of memory copy.
+- When size getting larger, e.g. `SIZE >= 128`, `mmap` method become very slow, even slower than naive method. And in such case, `shm` is the best among these three method.
+
 ```
 SIZE = 16
 Name                AvgTime(ms)         AvgCycles
@@ -506,15 +509,84 @@ cuda_mat_mul_mmap   484.942781          1117301924.000000
 
 ## Evaluation
 
+The original data of test result is [here](https://github.com/sinkinben/hpc-learning/blob/master/matrix-mul/test-result.txt).
 
+**GEMM on CPU**
 
-|                           CPU - 1                            |                           CPU - 2                            |                           CPU - 3                            |
+Let's have a look on the performance of GEMM on CPU. I compare some improved methods with naive method. The y-axis of figure 1-3 show their times of speedup, compared with naive method, i.e. $T_{\text{naive}} / T_{\text{method}}$.
+
+- `cpu_opt_loop`: Change the order of `for-loop`, it access three matrices in a row-oriented way.
+- `cpu_tile`: Divide matrix into some tiles, and conquer each of them.
+- `cpu_multi_threads`: Divide result matrix `C` into 4 parts, create 4 threads (there are 4 core on my machine) to compute each part of `C` using the method of `cpu_tile`.
+- `spmd_ispc`: Based on the method of `cpu_tile`, the Intel-ISPC library is used to improve the parallelism of the program. (I wrote ISPC code in a just-so-so way, so the performance seems not pretty good.)
+- `simd_avx`: Base on the method of `cpu_tile`, AVX instructions is used to compute 8 float-multiplications in one instructions cycle.
+  - Actullay, using the flags `-funroll-all-loops` and `-O3` of gcc/g++, the complier will help us generate vectorize instructions.
+  - Or use marco `#prama unroll` before some specific for-loops.
+
+Result analysis:
+
+- For `SIZE = 16, ..., 128`, best method is `cpu_tile`.
+- For `SIZE >= 256`, `cpu_multi_threads` is the best, since L1-cache of each core is fully utilized in this method.
+
+Conclusion:
+
+- The main performance bottleneck of GEMM is **memory accessing (I/O)**, more specifically, is the bandwidth of DRAM.
+- Writing cache-friendly code will powerfully speedup our algorithm.
+- Vectorization is good to help, but it relies heavily on hardware implementation.
+
+|                          Figure - 1                          |                          Figure - 2                          |                          Figure - 3                          |
 | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
 | <img src="https://raw.githubusercontent.com/Sin-Kinben/PicGo/master/img/cpu-gemm-16-128.png"/> | <img src="https://raw.githubusercontent.com/Sin-Kinben/PicGo/master/img/cpu-gemm-256-1024.png"/> | <img src="https://raw.githubusercontent.com/Sin-Kinben/PicGo/master/img/cpu-gemm-2048-4096.png"/> |
 
+<br/>
 
+**GEMM on GPU**
 
-|                           GPU - 1                            |                           GPU - 2                            |
+I write three methods of GEMM using CUDA.
+
+- `cuda_mat_mul`: Naive method, one thread compute one `C[i, j]`.
+- `cuda_mat_shm`: Utilized shared memory within each block, to reduce the latency of memory-accessing.
+- `cuda_mat_mmap`:  Memory mapping between host and device, to reduce latency of memory-copy.
+
+Analysis:
+
+- The y-axis represents computation time.
+- When size is smaller, `mmap` is great, since it reduces memory-copy and it takes very little time to compute `C[i, j]` in such case. And when first time to access `A[i, j], B[i, j], C[i, j]`, they can be cached in registers and cache of GPU.
+- When size getting larger, `mmap` become worse than naive method, `shm` becomes the best among these three. 
+- It shows the conclusion again, the bottleneck of GEMM is **memory accessing (I/O)** and bandwidth of DRAM.
+
+|                          Figure - 4                          |                          Figure - 5                          |
 | :----------------------------------------------------------: | :----------------------------------------------------------: |
 | <img src="https://raw.githubusercontent.com/Sin-Kinben/PicGo/master/img/gpu-gemm-256.png"/> | <img src="https://raw.githubusercontent.com/Sin-Kinben/PicGo/master/img/gpu-gemm-4096.png"/> |
 
+<br/>
+
+**CPU v.s. GPU**
+
+Is GPU better than CPU? According to test results on my machine (Intel i5 v.s. Nvidia 960M), that's not true.
+
+Actually, for **small size of GEMM**, simple multi-threads on CPU is better than GPU. Because we always need to copy data from host to device in CUDA programming, the latency of this is "heavy". GPU is suitable for large-scale matrix operations, I think.
+
+
+
+## Strassen Algorithm
+
+The algorithms above are $O(n^3)$, but we have $O(n^{2.7})$ algorithm - [Strassen algorithm](https://en.wikipedia.org/wiki/Strassen_algorithm).
+
+Its main idea is using addition and substraction to reduce one multiplication. (The cycle of `mul` is longer than `add, sub`.)
+
+<img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/c998aa21de3dffad2a57b3fba64609a3b41775f1"/>
+
+And we have:
+
+<img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/f1b8a46882d5cb7d9fcc39c7a0eed594da1e83b0" />
+
+The Strassen algorithm defines instead new matrices:
+
+<img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/bbac28ea3132ad46f881479f93778819091b9b60" />
+
+Now we can using 7 multiplications instead of 8 to compute matrix `C`.
+
+<img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/854fc6d53e30230de737ed05c32feaf2eada105c" />
+
+But the cost here is, we need to frequently allocate and free buffer of `M[i]`, it brings some cons.

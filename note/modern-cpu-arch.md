@@ -40,7 +40,7 @@ In our common sense, all the DRAM memory have equal status in front of each CPU 
 
 For most modern multi-processors, they are NUMA architecture. Hence the memory access latency depends on the memory location relative to the processor.
 
-Suppose there are multiple physical CPUs on one machine.
+Suppose there are multiple physical CPUs on one machine. (Hint: For most of PCs, laptops, there is only one physical CPU. But for some servers or mainframes, there may be multiple CPUs on one machine.)
 
 <img src="https://raw.githubusercontent.com/Sin-Kinben/PicGo/master/img/boost-numa.png" style="width:80%; background: white; border-radius: 0px;"/>
 
@@ -57,6 +57,7 @@ For more details, please refer to [Non-uniform memory access](https://en.wikiped
   - `cat /proc/cpuinfo | grep "cpu cores"`, or
   - `cat /proc/cpuinfo | grep "core id"`
 - What is the max-number of parallel threads at the same time? - `grep "processor" /proc/cpuinfo`
+- Command `lscpu`  will list information of CPU.
 
 That is to say, CPU > Core > Processor.
 
