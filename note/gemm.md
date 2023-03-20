@@ -333,7 +333,7 @@ I have made a special adaptation on `Matrix` class for using CUDA, see `include/
 
 I "borrow" this figure from [Nvidia CUDA Guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#async_prog_model_intro).
 
-<img src="https://docs.nvidia.com/cuda/cuda-c-programming-guide/graphics/matrix-multiplication-without-shared-memory.png" style="width:50%" />
+<img src="https://raw.githubusercontent.com/sinkinben/hpc-learning/master/images/gemm-without-shared-memory.png" style="width:50%" />
 
 ```cpp
 #include "cuda_matrix.h"
@@ -386,7 +386,7 @@ __host__ void MatrixMul(Matrix A, Matrix B, Matrix C)
 - In naive method, we need to access elements from global memory (which is very "far" from SMs of GPU).
 - Within each block, there is 64KB shared memory, we can leverage it.
 
-<img src="https://docs.nvidia.com/cuda/cuda-c-programming-guide/graphics/matrix-multiplication-with-shared-memory.png" />
+<img src="https://raw.githubusercontent.com/sinkinben/hpc-learning/master/images/gemm-with-shared-memory.png" />
 
 ```cpp
 #include "cuda_matrix.h"
